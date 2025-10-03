@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pro Typing Speed Test — HTML Only</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#0b1220; --card:#0f1724; --muted:#94a3b8;
+    --accent1:#7c3aed; --accent2:#06b6d4; --success:#10b981; --danger:#ef4444;
+    --glass: rgba(255,255,255,0.04);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,#030615 0%, #071031 50%, #071a2b 100%);
+    color:#e6eef8;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    padding:28px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .container{
+    width:100%;
+    max-width:1100px;
+    display:grid;
+    grid-template-columns: 1fr 420px;
+    gap:22px;
+    align-items:start;
+  }
+
+  header.appbar{
+    grid-column: 1 / -1;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:6px;
+  }
+  .brand{
+    display:flex; gap:12px; align-items:center;
+  }
+  .logo{
+    width:48px; height:48px; border-radius:10px;
+    background: linear-gradient(135deg,var(--accent1),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:white;
+    box-shadow: 0 6px 30px rgba(112,74,224,0.15), inset 0 -6px 18px rgba(0,0,0,0.2);
+  }
+  h1{font-size:18px;margin:0}
+  p.lead{color:var(--muted); margin:0; font-size:13px}
+
+  /* Left column: main card */
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius: var(--radius);
+    padding:20px;
+    border:1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 8px 40px rgba(2,6,23,0.6);
+  }
+
+  .sample-area{
+    background: linear-gradient(180deg,#071022 0%, #081625 100%);
+    border-radius:12px;
+    padding:18px;
+    color:#dbeafe;
+    min-height:120px;
+    font-size:18px;
+    line-height:1.8;
+    overflow-wrap:break-word;
+    white-space:pre-wrap;
+    position:relative;
+    border:1px solid rgba(255,255,255,0.03);
+  }
+
+  /* per-char rendering */
+  .char{display:inline-block; padding:0 2px; border-radius:6px; transition: background .12s, color .12s; font-variant-ligatures:none}
+  .char.space{ /* keep space visually tidy without injecting a dot */ padding:0 6px}
+  .char.pending{ color:var(--muted) }
+  .char.correct{ background: rgba(16,185,129,0.10); color:var(--success); box-shadow: inset 0 -4px 12px rgba(16,185,129,0.03)}
+  .char.wrong{ background: rgba(239,68,68,0.06); color:var(--danger) }
+  .char.current{ outline: 2px solid rgba(99,102,241,0.12); box-shadow: 0 6px 24px rgba(99,102,241,0.06); position:relative}
+  .char.current::after{ content:''; position:absolute; left:50%; transform:translateX(-50%); bottom:-8px; width:2px; height:18px; background:linear-gradient(180deg,#fff, transparent); border-radius:2px; animation: blink 1s steps(1) infinite }
+  @keyframes blink{50%{opacity:0}}
+
+  textarea.typing{
+    width:100%;
+    margin-top:14px;
+    min-height:120px;
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:16px;
+    line-height:1.5;
+    color:#dbeafe;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.015));
+    border:1px solid rgba(255,255,255,0.03);
+    resize:vertical;
+    outline:none;
+  }
+  textarea.typing::placeholder{ color:rgba(255,255,255,0.28) }
+
+  .controls{
+    display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap;
+  }
+  .btn{
+    display:inline-flex; gap:8px; align-items:center; justify-content:center;
+    padding:10px 14px; border-radius:10px; cursor:pointer; border:none; font-weight:600;
+    background: linear-gradient(90deg,var(--accent1),var(--accent2)); color:white; box-shadow: 0 8px 30px rgba(99,102,241,0.12);
+  }
+  .btn.ghost{ background:transparent; color:var(--accent2); border:1px solid rgba(255,255,255,0.04); box-shadow:none; font-weight:600 }
+  .btn.warn{ background: linear-gradient(90deg,#fb923c,#f97316); }
+  .btn.small{ padding:8px 10px; font-size:13px }
+
+  .status-row{ margin-left:auto; display:flex; gap:12px; align-items:center; }
+  .metric{
+    display:flex; flex-direction:column; align-items:flex-start; gap:4px; background:var(--glass);
+    padding:10px 12px; border-radius:10px; min-width:92px;
+    border:1px solid rgba(255,255,255,0.02);
+  }
+  .metric .label{ font-size:12px; color:var(--muted) }
+  .metric .value{ font-size:18px; font-weight:700; color:#fff }
+
+  .progress{
+    height:8px; background: rgba(255,255,255,0.04); border-radius:999px; margin-top:12px; overflow:hidden;
+  }
+  .progress > i{ display:block; height:100%; background: linear-gradient(90deg,var(--accent2),var(--accent1)); width:0%; transition:width .18s ease }
+
+  /* Right column: panel */
+  .panel{
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.03);
+    height:fit-content;
+  }
+  .panel h3{ margin:0 0 10px 0; font-size:16px }
+  .leaderboard{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .score-item{ display:flex; gap:8px; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.02) }
+  .score-left{ display:flex; gap:10px; align-items:center }
+  .avatar{
+    width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff
+  }
+  .meta{ color:var(--muted); font-size:12px}
+  .empty{ color:var(--muted); font-size:13px; padding:8px; text-align:center}
+
+  footer.credits{ grid-column: 1 / -1; color:var(--muted); margin-top:6px; font-size:13px; text-align:center }
+
+  @media (max-width:980px){
+    .container{ grid-template-columns: 1fr; padding:0 8px }
+    .status-row{ margin-left:0; width:100%; justify-content:space-between }
+  }
+</style>
+</head>
+<body>
+  <div class="container" role="application" aria-label="Typing speed test app">
+    <header class="appbar">
+      <div class="brand">
+        <div class="logo" aria-hidden>TS</div>
+        <div>
+          <h1>Pro Typing Speed Test</h1>
+          <p class="lead">Fast, accurate, and polished — client-only demo</p>
+        </div>
+      </div>
+      <div>
+        <button id="newSample" class="btn ghost small" title="Load a new random sample">New sample</button>
+        <button id="shareTop" class="btn small" title="Copy top score">Copy top</button>
+      </div>
+    </header>
+
+    <!-- left: main -->
+    <section class="card" aria-labelledby="mainTitle">
+      <div id="mainTitle" style="display:none">Typing test</div>
+
+      <div id="sampleArea" class="sample-area" aria-live="polite" role="region" aria-label="Typing sample"></div>
+
+      <textarea id="typing" class="typing" placeholder="Type the sample above. Your progress appears live..." aria-label="Typing input"></textarea>
+
+      <div class="controls">
+        <button id="restart" class="btn ghost small">Restart</button>
+        <button id="finish" class="btn ghost small">Finish</button>
+        <button id="saveLocal" class="btn small">Save to leaderboard</button>
+        <div class="status-row">
+          <div class="metric">
+            <span class="label">WPM</span>
+            <span id="wpm" class="value">—</span>
+          </div>
+          <div class="metric">
+            <span class="label">Accuracy</span>
+            <span id="acc" class="value">—</span>
+          </div>
+          <div class="metric">
+            <span class="label">Time (s)</span>
+            <span id="time" class="value">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress" aria-hidden="true">
+        <i id="progressBar"></i>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <input id="playerName" type="text" placeholder="Your name (optional)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef8" />
+        <button id="copyScore" class="btn ghost small">Copy score</button>
+        <button id="downloadScore" class="btn ghost small">Export</button>
+      </div>
+
+    </section>
+
+    <!-- right: panel -->
+    <aside class="panel" aria-labelledby="panelTitle">
+      <h3 id="panelTitle">Leaderboard (local)</h3>
+
+      <div class="leaderboard" id="leaderboard">
+        <div class="empty">No scores yet. Save your first run!</div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <button id="clearLB" class="btn ghost small">Clear</button>
+        <button id="exportLB" class="btn small">Export all</button>
+      </div>
+
+      <div style="margin-top:14px; color:var(--muted); font-size:13px">
+        Tip: this demo saves scores in your browser (localStorage). Use Export to download JSON.
+      </div>
+    </aside>
+
+    <footer class="credits">Ritesh Kumar IIT Kharagpur 3rd Year</footer>
+  </div>
+
+<script>
+(() => {
+  // --- samples (short and medium) ---
+  const samples = [
+    "The quick brown fox jumps over the lazy dog.",
+    "Typing speed measures how quickly you can accurately type text.",
+    "Practice daily to improve your speed and accuracy. Small gains compound into mastery.",
+    "Build projects, solve problems, iterate. That's how you get better and become confident.",
+    "Focus on accuracy first. Speed will follow. A steady rhythm is the secret to high WPM."
+  ];
+
+  // DOM
+  const sampleArea = document.getElementById('sampleArea');
+  const typing = document.getElementById('typing');
+  const wpmEl = document.getElementById('wpm');
+  const accEl = document.getElementById('acc');
+  const timeEl = document.getElementById('time');
+  const progressBar = document.getElementById('progressBar');
+  const newSampleBtn = document.getElementById('newSample');
+  const restartBtn = document.getElementById('restart');
+  const finishBtn = document.getElementById('finish');
+  const saveLocalBtn = document.getElementById('saveLocal');
+  const playerName = document.getElementById('playerName');
+  const copyScoreBtn = document.getElementById('copyScore');
+  const downloadScoreBtn = document.getElementById('downloadScore');
+  const leaderboardEl = document.getElementById('leaderboard');
+  const clearLB = document.getElementById('clearLB');
+  const exportLB = document.getElementById('exportLB');
+  const shareTopBtn = document.getElementById('shareTop');
+
+  // state
+  let current = '';
+  let startTime = null;
+  let finishTime = null;
+  let timer = null;
+
+  // helper: escape
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // render sample char-by-char
+  function renderSample(original, typed){
+    // do NOT show middle dot for spaces — use &nbsp; so spacing is natural
+    const orig = original;
+    const typedLen = typed.length;
+    let html = '';
+    for (let i=0;i<orig.length;i++){
+      const ch = orig[i];
+      // show non-breaking space so sequences of spaces are visually preserved
+      const disp = ch === ' ' ? '&nbsp;' : escapeHtml(ch);
+      const isTyped = i < typedLen;
+      const typedChar = isTyped ? typed[i] : undefined;
+      const clsBase = (ch === ' ') ? 'char space' : 'char';
+      if (!isTyped) {
+        const isCurrent = i === typedLen;
+        html += `<span class="${clsBase} pending ${isCurrent ? 'current' : ''}" data-i="${i}">${disp}</span>`;
+      } else {
+        // compare typed char to original
+        if (typedChar === ch) {
+          html += `<span class="${clsBase} correct" data-i="${i}">${disp}</span>`;
+        } else {
+          html += `<span class="${clsBase} wrong" data-i="${i}" title="expected: ${disp} / typed: ${escapeHtml(typedChar)}">${disp}</span>`;
+        }
+      }
+    }
+    // extra typed characters beyond the original
+    if (typedLen > orig.length){
+      const extra = typed.slice(orig.length);
+      for (let i=0;i<extra.length;i++){
+        const ch = escapeHtml(extra[i]);
+        html += `<span class="char wrong" data-i="${orig.length+i}" title="extra: ${ch}">${ch}</span>`;
+      }
+    }
+    sampleArea.innerHTML = html;
+  }
+
+  // metrics computation
+  function compute(original, typed, start, end){
+    const totalTyped = typed.length;
+    let correctChars = 0;
+    for (let i=0;i<Math.min(typed.length, original.length);i++){
+      if (typed[i] === original[i]) correctChars++;
+    }
+    // If typed longer than original, extra chars count as incorrect
+    const incorrectChars = totalTyped - correctChars;
+    const timeTaken = Math.max(1, (end - start) / 1000); // seconds
+    const wpm = Math.round((correctChars * 60) / (5 * timeTaken) * 10) / 10; // one decimal
+    const accuracy = totalTyped === 0 ? 0 : Math.round((correctChars / totalTyped) * 1000) / 10; // one decimal percent
+    return { totalTyped, correctChars, incorrectChars, timeTaken, wpm, accuracy };
+  }
+
+  function updateUI(){
+    const typed = typing.value;
+    const now = finishTime || Date.now();
+    if (startTime){
+      const m = compute(current, typed, startTime, now);
+      wpmEl.textContent = isFinite(m.wpm) ? m.wpm : '—';
+      accEl.textContent = (m.totalTyped === 0) ? '—' : (m.accuracy + '%');
+      timeEl.textContent = Math.round(m.timeTaken);
+    } else {
+      wpmEl.textContent = '—'; accEl.textContent = '—'; timeEl.textContent = '—';
+    }
+    // progress
+    const pct = Math.min(100, Math.round((typed.length / current.length) * 100));
+    progressBar.style.width = pct + '%';
+
+    renderSample(current, typed);
+
+    // auto-finish when typed exactly equals sample
+    if (typed === current && typed.length > 0 && !finishTime){
+      finishTime = Date.now();
+      stopTimer();
+      showFinished();
+    }
+  }
+
+  function startIfNeeded(){
+    if (startTime) return;
+    if (typing.value.length === 0) return;
+    startTime = Date.now();
+    timer = setInterval(updateUI, 150);
+  }
+
+  function stopTimer(){
+    if (timer){ clearInterval(timer); timer = null; }
+  }
+
+  function showFinished(){
+    const metrics = compute(current, typing.value, startTime || Date.now(), finishTime || Date.now());
+    // small visual confirmation in title area
+    sampleArea.insertAdjacentHTML('beforeend', `<div style="position:relative;margin-top:12px;padding:10px;border-radius:10px;background:linear-gradient(90deg, rgba(16,185,129,0.06), rgba(99,102,241,0.04)); border:1px solid rgba(255,255,255,0.02); color:#e6fff7; font-weight:600">
+      Finished — WPM: ${metrics.wpm} • Accuracy: ${metrics.accuracy}% • Time: ${Math.round(metrics.timeTaken)}s
+    </div>`);
+    updateUI();
+  }
+
+  function reset(newSample=false){
+    stopTimer();
+    startTime = null; finishTime = null; typing.value = '';
+    // remove any finished overlay message
+    // choose sample
+    if (newSample || !current) {
+      current = samples[Math.floor(Math.random()*samples.length)];
+    }
+    // if newSample chosen focus cursors
+    renderSample(current, '');
+    updateUI();
+    typing.focus();
+  }
+
+  // Leaderboard (localStorage)
+  const LS_KEY = 'pro_typing_leaderboard_v1';
+
+  function loadLeaderboard(){
+    try {
+      return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    } catch(e){ return [] }
+  }
+  function saveLeaderboard(arr){
+    localStorage.setItem(LS_KEY, JSON.stringify(arr));
+  }
+
+  function refreshLeaderboard(){
+    const scores = loadLeaderboard().sort((a,b)=> {
+      if (b.wpm === a.wpm) return a.time - b.time; // faster wins if same wpm
+      return b.wpm - a.wpm;
+    }).slice(0,10);
+    leaderboardEl.innerHTML = '';
+    if (!scores.length){
+      leaderboardEl.innerHTML = '<div class="empty">No scores yet. Save your first run!</div>';
+      return;
+    }
+    scores.forEach((s, idx) => {
+      const node = document.createElement('div');
+      node.className = 'score-item';
+      node.innerHTML = `<div class="score-left">
+          <div class="avatar">${String(s.name || 'AN').slice(0,2).toUpperCase()}</div>
+          <div>
+            <div style="font-weight:700">${s.name || 'Anonymous'}</div>
+            <div class="meta">${new Date(s.at).toLocaleString()}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800">${s.wpm} WPM</div>
+          <div class="meta">${s.acc}% • ${s.time}s</div>
+        </div>`;
+      leaderboardEl.appendChild(node);
+    });
+  }
+
+  function saveCurrentToLeaderboard(){
+    if (!startTime || !finishTime){
+      alert('Complete a run before saving to leaderboard.');
+      return;
+    }
+    const metrics = compute(current, typing.value, startTime, finishTime || Date.now());
+    const entry = {
+      name: (playerName.value || 'Anonymous'),
+      wpm: metrics.wpm,
+      acc: metrics.accuracy,
+      time: Math.round(metrics.timeTaken),
+      at: new Date().toISOString()
+    };
+    const arr = loadLeaderboard();
+    arr.push(entry);
+    saveLeaderboard(arr);
+    refreshLeaderboard();
+    alert('Saved to local leaderboard ✅');
+  }
+
+  // copy & export
+  function copyCurrent(){
+    if (!startTime || !finishTime) return alert('Finish a run first.');
+    const metrics = compute(current, typing.value, startTime, finishTime || Date.now());
+    const payload = { name: playerName.value || 'Anonymous', sample: current, metrics, finishedAt: new Date().toISOString() };
+    navigator.clipboard?.writeText(JSON.stringify(payload, null, 2)).then(()=> alert('Score copied to clipboard ✅')).catch(()=> alert('Could not copy to clipboard.'));
+  }
+  function downloadCurrent(){
+    if (!startTime || !finishTime) return alert('Finish a run first.');
+    const metrics = compute(current, typing.value, startTime, finishTime || Date.now());
+    const payload = { name: playerName.value || 'Anonymous', sample: current, metrics, finishedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `typing-score-${(payload.name||'anon')}-${Date.now()}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+  function exportLeaderboard(){
+    const arr = loadLeaderboard();
+    if (!arr.length) return alert('No leaderboard entries to export.');
+    const blob = new Blob([JSON.stringify(arr, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `leaderboard-${Date.now()}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
+  // clear LB
+  clearLB.addEventListener('click', ()=>{
+    if (!confirm('Clear all saved leaderboard scores?')) return;
+    localStorage.removeItem(LS_KEY); refreshLeaderboard();
+  });
+
+  // buttons
+  newSampleBtn.addEventListener('click', ()=> reset(true));
+  restartBtn.addEventListener('click', ()=> reset(false));
+  finishBtn.addEventListener('click', ()=>{
+    if (!startTime) return alert('Start typing first.');
+    finishTime = Date.now(); stopTimer(); showFinished();
+  });
+  saveLocalBtn.addEventListener('click', saveCurrentToLeaderboard);
+  copyScoreBtn.addEventListener('click', copyCurrent);
+  downloadScoreBtn.addEventListener('click', downloadCurrent);
+  exportLB.addEventListener('click', exportLeaderboard);
+  shareTopBtn.addEventListener('click', ()=>{
+    const arr = loadLeaderboard().sort((a,b)=> b.wpm - a.wpm);
+    if (!arr.length) return alert('No scores yet');
+    navigator.clipboard?.writeText(`${arr[0].name} — ${arr[0].wpm} WPM • ${arr[0].acc}%`).then(()=> alert('Top score copied ✅'));
+  });
+
+  // typed input handling
+  typing.addEventListener('input', (e)=>{
+    startIfNeeded(); updateUI();
+  });
+  typing.addEventListener('keydown', (e) => {
+    // keep small UX: allow Tab to insert a tab character
+    if (e.key === 'Tab'){
+      e.preventDefault();
+      const el = e.target;
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const value = el.value;
+      el.value = value.slice(0,start) + '\t' + value.slice(end);
+      el.selectionStart = el.selectionEnd = start + 1;
+      startIfNeeded(); updateUI();
+    }
+  });
+
+  // initial
+  reset(true);
+  refreshLeaderboard();
+
+  // focus
+  typing.focus();
+
+  // keyboard shortcut: Ctrl+Enter to finish
+  document.addEventListener('keydown', (e)=>{
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      finishBtn.click();
+    }
+  });
+})();
+</script>
+</body>
+</html>
